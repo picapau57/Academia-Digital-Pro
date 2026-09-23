@@ -54,6 +54,9 @@ interface AppContextType {
   deleteCourse: (courseId: string) => void;
   updateSettings: (newSettings: PlatformSettings) => void;
   applyCoupon: (code: string, currentTotal: number) => { valid: boolean; discount: number; coupon?: Coupon; message: string };
+  createCoupon: (newCoupon: Coupon) => boolean;
+  deleteCoupon: (couponCode: string) => void;
+  toggleCouponStatus: (couponCode: string) => void;
 
   // Orders & Payment
   createOrder: (orderData: Omit<Order, 'id' | 'createdAt' | 'status'>) => Order;
@@ -292,6 +295,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       coupon: found,
       message: t.checkout.couponApplied,
     };
+  };
+
+  const createCoupon = (newCoupon: Coupon): boolean => {
+    const cleanCode = newCoupon.code.trim().toUpperCase();
+    if (coupons.some((c) => c.code === cleanCode)) {
+      showToast(`O cupom "${cleanCode}" já existe. Escolha outro código.`, 'error');
+      return false;
+    }
+
+    const nextCoupons = [...coupons, { ...newCoupon, code: cleanCode }];
+    setCouponsState(nextCoupons);
+    storage.setCoupons(nextCoupons);
+
+    storage.addAuditLog({
+      adminEmail: currentUser?.email || 'admin@academiadigitalpro.com.br',
+      action: 'Criação de Cupom',
+      details: `Cupom ${cleanCode} criado com desconto de ${
+        newCoupon.discountType === 'PERCENT' ? `${newCoupon.discountValue}%` : `R$ ${newCoupon.discountValue.toFixed(2)}`
+      }.`,
+    });
+    setAuditLogsState(storage.getAuditLogs());
+    showToast(`Cupom ${cleanCode} criado com sucesso!`, 'success');
+    return true;
+  };
+
+  const deleteCoupon = (couponCode: string) => {
+    const cleanCode = couponCode.trim().toUpperCase();
+    const nextCoupons = coupons.filter((c) => c.code !== cleanCode);
+    setCouponsState(nextCoupons);
+    storage.setCoupons(nextCoupons);
+
+    storage.addAuditLog({
+      adminEmail: currentUser?.email || 'admin@academiadigitalpro.com.br',
+      action: 'Exclusão de Cupom',
+      details: `Cupom promocional ${cleanCode} excluído da plataforma.`,
+    });
+    setAuditLogsState(storage.getAuditLogs());
+    showToast(`Cupom ${cleanCode} excluído com sucesso!`, 'info');
+  };
+
+  const toggleCouponStatus = (couponCode: string) => {
+    const cleanCode = couponCode.trim().toUpperCase();
+    let newStatus = false;
+    const nextCoupons = coupons.map((c) => {
+      if (c.code === cleanCode) {
+        newStatus = !c.active;
+        return { ...c, active: newStatus };
+      }
+      return c;
+    });
+    setCouponsState(nextCoupons);
+    storage.setCoupons(nextCoupons);
+
+    storage.addAuditLog({
+      adminEmail: currentUser?.email || 'admin@academiadigitalpro.com.br',
+      action: 'Alteração de Cupom',
+      details: `Status do cupom ${cleanCode} alterado para ${newStatus ? 'ATIVO' : 'PAUSADO'}.`,
+    });
+    setAuditLogsState(storage.getAuditLogs());
+    showToast(`Cupom ${cleanCode} agora está ${newStatus ? 'Ativo' : 'Pausado'}.`, 'info');
   };
 
   // Orders
@@ -657,6 +720,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteCourse,
         updateSettings,
         applyCoupon,
+        createCoupon,
+        deleteCoupon,
+        toggleCouponStatus,
         createOrder,
         approveOrder,
         rejectOrder,

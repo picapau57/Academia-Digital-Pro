@@ -50,6 +50,9 @@ export const AdminDashboardPage: React.FC = () => {
     refundOrder,
     deleteOrder,
     clearDemoData,
+    createCoupon,
+    deleteCoupon,
+    toggleCouponStatus,
     revokeCertificate,
     deleteCertificate,
     navigateTo,
@@ -66,6 +69,7 @@ export const AdminDashboardPage: React.FC = () => {
   // Delete orders modals state
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const [showClearAllModal, setShowClearAllModal] = useState<boolean>(false);
+  const [deletingCouponCode, setDeletingCouponCode] = useState<string | null>(null);
 
   // Settings form state
   const [formSettings, setFormSettings] = useState<PlatformSettings>({ ...settings });
@@ -148,7 +152,7 @@ export const AdminDashboardPage: React.FC = () => {
     e.preventDefault();
     if (!newCouponCode.trim()) return;
 
-    const newCoupon: Coupon = {
+    const success = createCoupon({
       code: newCouponCode.trim().toUpperCase(),
       discountType: newCouponType,
       discountValue: Number(newCouponValue),
@@ -156,11 +160,11 @@ export const AdminDashboardPage: React.FC = () => {
       maxUses: 100,
       currentUses: 0,
       minPurchase: Number(newCouponMin),
-    };
+    });
 
-    coupons.push(newCoupon);
-    showToast(`Cupom ${newCoupon.code} criado com sucesso!`, 'success');
-    setNewCouponCode('');
+    if (success) {
+      setNewCouponCode('');
+    }
   };
 
   return (
@@ -854,37 +858,88 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
 
                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-                  <div className="p-6 border-b border-slate-200">
-                    <h3 className="font-serif text-lg font-bold text-slate-900">Cupons Cadastrados</h3>
+                  <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h3 className="font-serif text-lg font-bold text-slate-900">Cupons Cadastrados</h3>
+                      <p className="text-xs text-slate-500">
+                        Gerencie, pause ou exclua os cupons promocionais da sua plataforma.
+                      </p>
+                    </div>
+                    <span className="text-xs text-slate-500 font-medium">Total: {coupons.length} cupons</span>
                   </div>
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-                      <tr>
-                        <th className="p-4">Código</th>
-                        <th className="p-4">Desconto</th>
-                        <th className="p-4">Mínimo de Compra</th>
-                        <th className="p-4">Usos</th>
-                        <th className="p-4">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-slate-700">
-                      {coupons.map((cpn) => (
-                        <tr key={cpn.code}>
-                          <td className="p-4 font-mono font-bold text-slate-900">{cpn.code}</td>
-                          <td className="p-4">
-                            {cpn.discountType === 'PERCENT' ? `${cpn.discountValue}%` : `R$ ${cpn.discountValue.toFixed(2)}`}
-                          </td>
-                          <td className="p-4">R$ {cpn.minPurchase.toFixed(2)}</td>
-                          <td className="p-4 tabular-nums">{cpn.currentUses} / {cpn.maxUses}</td>
-                          <td className="p-4">
-                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded text-[10px]">
-                              Ativo
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+
+                  {coupons.length === 0 ? (
+                    <div className="p-12 text-center space-y-3">
+                      <Tag className="w-12 h-12 text-slate-300 mx-auto" />
+                      <h4 className="font-serif text-base font-bold text-slate-800">
+                        Nenhum cupom cadastrado
+                      </h4>
+                      <p className="text-xs text-slate-500 max-w-md mx-auto">
+                        Você não possui cupons cadastrados. Preencha o formulário acima para criar um cupom de desconto.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                          <tr>
+                            <th className="p-4">Código</th>
+                            <th className="p-4">Desconto</th>
+                            <th className="p-4">Mínimo de Compra</th>
+                            <th className="p-4">Usos</th>
+                            <th className="p-4">Status</th>
+                            <th className="p-4 text-right">Ações</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-700">
+                          {coupons.map((cpn) => (
+                            <tr key={cpn.code} className="hover:bg-slate-50">
+                              <td className="p-4 font-mono font-bold text-slate-900">{cpn.code}</td>
+                              <td className="p-4">
+                                {cpn.discountType === 'PERCENT' ? `${cpn.discountValue}%` : `R$ ${cpn.discountValue.toFixed(2)}`}
+                              </td>
+                              <td className="p-4">R$ {cpn.minPurchase.toFixed(2)}</td>
+                              <td className="p-4 tabular-nums">{cpn.currentUses} / {cpn.maxUses}</td>
+                              <td className="p-4">
+                                {cpn.active ? (
+                                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded text-[10px]">
+                                    Ativo
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded text-[10px]">
+                                    Pausado
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-4 text-right space-x-1.5 whitespace-nowrap">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleCouponStatus(cpn.code)}
+                                  className={`px-2.5 py-1 rounded text-[11px] font-semibold cursor-pointer transition-colors ${
+                                    cpn.active
+                                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                  }`}
+                                  title={cpn.active ? 'Pausar este cupom temporariamente' : 'Reativar este cupom'}
+                                >
+                                  {cpn.active ? 'Pausar' : 'Ativar'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeletingCouponCode(cpn.code)}
+                                  className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded text-[11px] font-semibold cursor-pointer inline-flex items-center gap-1"
+                                  title="Excluir este cupom permanentemente"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  <span>Excluir</span>
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1305,6 +1360,44 @@ export const AdminDashboardPage: React.FC = () => {
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded cursor-pointer"
               >
                 Sim, Apagar Tudo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Coupon Dialog */}
+      {deletingCouponCode && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center text-rose-600 mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-1.5">
+              <h3 className="font-serif text-lg font-bold text-slate-900">
+                Excluir Cupom &quot;{deletingCouponCode}&quot;?
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Tem certeza que deseja excluir permanentemente este cupom de desconto? Clientes não poderão mais utilizá-lo na página de checkout.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingCouponCode(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteCoupon(deletingCouponCode);
+                  setDeletingCouponCode(null);
+                }}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded cursor-pointer"
+              >
+                Sim, Excluir Cupom
               </button>
             </div>
           </div>

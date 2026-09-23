@@ -274,7 +274,14 @@ export const storage = {
 
   getCoupons(): Coupon[] {
     const data = localStorage.getItem('adp_coupons');
-    return data ? JSON.parse(data) : INITIAL_COUPONS;
+    if (data !== null) {
+      try {
+        return JSON.parse(data);
+      } catch {
+        return [];
+      }
+    }
+    return INITIAL_COUPONS;
   },
   setCoupons(coupons: Coupon[]): void {
     localStorage.setItem('adp_coupons', JSON.stringify(coupons));
