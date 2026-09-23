@@ -15,6 +15,8 @@ import {
   FileText,
   Layers,
   Settings,
+  GraduationCap,
+  Trophy,
 } from 'lucide-react';
 import { LanguageSelector } from '../components/common/LanguageSelector';
 import { ThemeToggle } from '../components/common/ThemeToggle';
@@ -60,6 +62,10 @@ export const StudentDashboardPage: React.FC = () => {
   }).filter((item) => item.course !== undefined);
 
   const completedCount = studentEnrollments.filter((e) => e.progressPercent === 100).length;
+  const totalEnrolledCourses = enrolledCourses.length;
+  const courseCompletionPercent =
+    totalEnrolledCourses > 0 ? Math.round((completedCount / totalEnrolledCourses) * 100) : 0;
+
   const averageProgress =
     studentEnrollments.length > 0
       ? Math.round(
@@ -140,9 +146,14 @@ export const StudentDashboardPage: React.FC = () => {
           </p>
         </div>
         <div className="bg-white dark:bg-slate-900 p-4.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-1">
-          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold block">{t.student.completedCourses}</span>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold block">{t.student.completedCourses}</span>
+            <span className="text-[10px] font-bold text-slate-400 tabular-nums">
+              {totalEnrolledCourses > 0 ? `${courseCompletionPercent}%` : '0%'}
+            </span>
+          </div>
           <p className="font-serif text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-            {completedCount}
+            {completedCount} <span className="text-xs font-normal text-slate-400 font-sans">/ {totalEnrolledCourses}</span>
           </p>
         </div>
         <div className="bg-white dark:bg-slate-900 p-4.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-1">
@@ -162,6 +173,81 @@ export const StudentDashboardPage: React.FC = () => {
           <p className="font-serif text-2xl font-bold text-slate-700 dark:text-slate-200 tabular-nums">
             {downloads.filter((d) => d.studentId === currentUser.id).length}
           </p>
+        </div>
+      </div>
+
+      {/* Visual Progress Bar: Cursos Concluídos vs Total Inscrito */}
+      <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3.5">
+            <div
+              className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                totalEnrolledCourses > 0 && completedCount === totalEnrolledCourses
+                  ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-amber-100 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400'
+              }`}
+            >
+              {totalEnrolledCourses > 0 && completedCount === totalEnrolledCourses ? (
+                <Trophy className="w-6 h-6" />
+              ) : (
+                <GraduationCap className="w-6 h-6" />
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="font-serif text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                  Progresso de Conclusão dos Cursos
+                </h2>
+                <span className="text-[11px] font-sans font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  {completedCount} de {totalEnrolledCourses} concluído{totalEnrolledCourses === 1 ? '' : 's'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {totalEnrolledCourses === 0
+                  ? 'Você ainda não está inscrito em nenhum curso. Acesse nosso catálogo para começar sua jornada!'
+                  : completedCount === totalEnrolledCourses
+                  ? '🎉 Parabéns! Você concluiu com sucesso 100% de todos os cursos em que se matriculou!'
+                  : completedCount === 0
+                  ? 'Você ainda não concluiu nenhum curso. Complete todas as lições para obter seus certificados!'
+                  : `Você já concluiu ${completedCount} curso${completedCount > 1 ? 's' : ''} de ${totalEnrolledCourses} inscrito${totalEnrolledCourses > 1 ? 's' : ''}. Resta${totalEnrolledCourses - completedCount > 1 ? 'm' : ''} ${totalEnrolledCourses - completedCount} para gabaritar!`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 dark:border-slate-800 shrink-0">
+            <div className="font-serif text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
+              {courseCompletionPercent}%
+            </div>
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+              Taxa de Conclusão
+            </span>
+          </div>
+        </div>
+
+        {/* Visual Progress Track */}
+        <div className="space-y-1.5 pt-1">
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-4 overflow-hidden p-0.5 shadow-inner">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ease-out ${
+                totalEnrolledCourses > 0 && completedCount === totalEnrolledCourses
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-xs'
+                  : 'bg-gradient-to-r from-amber-500 via-amber-400 to-emerald-500 shadow-xs'
+              }`}
+              style={{ width: `${courseCompletionPercent}%` }}
+              role="progressbar"
+              aria-valuenow={courseCompletionPercent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            />
+          </div>
+
+          <div className="flex justify-between items-center text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+            <span>0 cursos</span>
+            <span className="font-semibold text-slate-700 dark:text-slate-200">
+              {completedCount} de {totalEnrolledCourses} curso{totalEnrolledCourses === 1 ? '' : 's'} concluído{completedCount === 1 ? '' : 's'} ({courseCompletionPercent}%)
+            </span>
+            <span>{totalEnrolledCourses} cursos</span>
+          </div>
         </div>
       </div>
 
