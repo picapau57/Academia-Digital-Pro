@@ -1,0 +1,6 @@
+{
+  "name": "Academia Digital Pro",
+  "description": "Plataforma de cursos online práticos com acesso imediato via PIX, materiais digitais em PDF e certificados verificáveis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
