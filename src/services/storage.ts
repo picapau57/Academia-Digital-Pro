@@ -229,7 +229,14 @@ export const storage = {
 
   getOrders(): Order[] {
     const data = localStorage.getItem('adp_orders');
-    return data ? JSON.parse(data) : INITIAL_ORDERS;
+    if (data !== null) {
+      try {
+        return JSON.parse(data);
+      } catch {
+        return [];
+      }
+    }
+    return INITIAL_ORDERS;
   },
   setOrders(orders: Order[]): void {
     localStorage.setItem('adp_orders', JSON.stringify(orders));
@@ -237,7 +244,14 @@ export const storage = {
 
   getEnrollments(): Enrollment[] {
     const data = localStorage.getItem('adp_enrollments');
-    return data ? JSON.parse(data) : INITIAL_ENROLLMENTS;
+    if (data !== null) {
+      try {
+        return JSON.parse(data);
+      } catch {
+        return [];
+      }
+    }
+    return INITIAL_ENROLLMENTS;
   },
   setEnrollments(enrollments: Enrollment[]): void {
     localStorage.setItem('adp_enrollments', JSON.stringify(enrollments));
@@ -245,7 +259,14 @@ export const storage = {
 
   getCertificates(): Certificate[] {
     const data = localStorage.getItem('adp_certificates');
-    return data ? JSON.parse(data) : INITIAL_CERTIFICATES;
+    if (data !== null) {
+      try {
+        return JSON.parse(data);
+      } catch {
+        return [];
+      }
+    }
+    return INITIAL_CERTIFICATES;
   },
   setCertificates(certs: Certificate[]): void {
     localStorage.setItem('adp_certificates', JSON.stringify(certs));

@@ -60,12 +60,15 @@ interface AppContextType {
   approveOrder: (orderId: string) => void;
   rejectOrder: (orderId: string, reason?: string) => void;
   refundOrder: (orderId: string) => void;
+  deleteOrder: (orderId: string) => void;
+  clearDemoData: () => void;
 
   // Learning & LMS
   toggleLessonCompletion: (courseId: string, lessonId: string) => void;
   getEnrollmentForCourse: (courseId: string) => Enrollment | undefined;
   issueCertificate: (courseId: string, studentId: string) => Certificate;
   revokeCertificate: (certificateId: string, reason: string) => void;
+  deleteCertificate: (certificateId: string) => void;
   recordFileDownload: (courseId: string, courseTitle: string, type: 'COURSE_PDF' | 'CERTIFICATE') => void;
 
   // UI Toast
@@ -428,6 +431,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Pedido ${orderId} marcado como Estornado.`, 'info');
   };
 
+  const deleteOrder = (orderId: string) => {
+    const target = orders.find((o) => o.id === orderId);
+    if (!target) return;
+
+    const nextOrders = orders.filter((o) => o.id !== orderId);
+    setOrdersState(nextOrders);
+    storage.setOrders(nextOrders);
+
+    // If student has no other approved orders, remove their enrollment
+    if (target.status === 'APPROVED') {
+      const otherApprovedOrders = nextOrders.filter(
+        (o) => o.studentId === target.studentId && o.status === 'APPROVED'
+      );
+      if (otherApprovedOrders.length === 0) {
+        const nextEnrollments = enrollments.filter((e) => e.studentId !== target.studentId);
+        setEnrollmentsState(nextEnrollments);
+        storage.setEnrollments(nextEnrollments);
+      }
+    }
+
+    storage.addAuditLog({
+      adminEmail: currentUser?.email || 'admin@academiadigitalpro.com.br',
+      action: 'Exclusão de Pedido',
+      details: `Pedido ${orderId} (${target.studentName} — ${target.courseTitle}) excluído da plataforma.`,
+    });
+    setAuditLogsState(storage.getAuditLogs());
+    showToast(`Pedido ${orderId} excluído com sucesso.`, 'info');
+  };
+
+  const clearDemoData = () => {
+    setOrdersState([]);
+    storage.setOrders([]);
+
+    setEnrollmentsState([]);
+    storage.setEnrollments([]);
+
+    setCertificatesState([]);
+    storage.setCertificates([]);
+
+    storage.addAuditLog({
+      adminEmail: currentUser?.email || 'admin@academiadigitalpro.com.br',
+      action: 'Limpeza de Dados de Teste',
+      details: 'Todos os pedidos, alunos de demonstração e certificados de exemplo foram excluídos pelo administrador.',
+    });
+    setAuditLogsState(storage.getAuditLogs());
+    showToast('Todos os alunos e pedidos de teste foram apagados com sucesso!', 'success');
+  };
+
   // Learning / LMS methods
   const getEnrollmentForCourse = (courseId: string) => {
     if (!currentUser) return undefined;
@@ -553,6 +604,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Certificado ${certificateId} foi revogado com sucesso.`, 'info');
   };
 
+  const deleteCertificate = (certificateId: string) => {
+    const nextCerts = certificates.filter((c) => c.id !== certificateId);
+    setCertificatesState(nextCerts);
+    storage.setCertificates(nextCerts);
+
+    storage.addAuditLog({
+      adminEmail: currentUser?.email || 'admin@academiadigitalpro.com.br',
+      action: 'Exclusão de Certificado',
+      details: `Certificado ${certificateId} excluído do sistema.`,
+    });
+    setAuditLogsState(storage.getAuditLogs());
+    showToast(`Certificado ${certificateId} excluído com sucesso.`, 'info');
+  };
+
   const recordFileDownload = (courseId: string, courseTitle: string, type: 'COURSE_PDF' | 'CERTIFICATE') => {
     storage.recordDownload({
       courseId,
@@ -596,10 +661,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         approveOrder,
         rejectOrder,
         refundOrder,
+        deleteOrder,
+        clearDemoData,
         toggleLessonCompletion,
         getEnrollmentForCourse,
         issueCertificate,
         revokeCertificate,
+        deleteCertificate,
         recordFileDownload,
         toasts,
         showToast,

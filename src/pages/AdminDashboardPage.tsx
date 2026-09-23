@@ -48,7 +48,10 @@ export const AdminDashboardPage: React.FC = () => {
     approveOrder,
     rejectOrder,
     refundOrder,
+    deleteOrder,
+    clearDemoData,
     revokeCertificate,
+    deleteCertificate,
     navigateTo,
     showToast,
     t,
@@ -59,6 +62,10 @@ export const AdminDashboardPage: React.FC = () => {
   >('dashboard');
 
   const [selectedCertForModal, setSelectedCertForModal] = useState<Certificate | null>(null);
+
+  // Delete orders modals state
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
+  const [showClearAllModal, setShowClearAllModal] = useState<boolean>(false);
 
   // Settings form state
   const [formSettings, setFormSettings] = useState<PlatformSettings>({ ...settings });
@@ -403,6 +410,15 @@ export const AdminDashboardPage: React.FC = () => {
                               <XCircle className="w-3.5 h-3.5" />
                               <span>{t.admin.reject}</span>
                             </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeletingOrderId(ord.id)}
+                              className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold rounded shadow-xs cursor-pointer flex items-center gap-1"
+                              title="Excluir este pedido de teste"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Excluir</span>
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -433,7 +449,7 @@ export const AdminDashboardPage: React.FC = () => {
             {/* SECTION 2: ORDERS MANAGEMENT */}
             {activeSection === 'orders' && (
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-                <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+                <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h2 className="font-serif text-lg font-bold text-slate-900">
                       Gestão de Pedidos e Comprovantes PIX
@@ -442,109 +458,143 @@ export const AdminDashboardPage: React.FC = () => {
                       Revise comprovantes anexados pelos alunos e aprove a liberação de matrículas.
                     </p>
                   </div>
-                  <span className="text-xs text-slate-500 font-medium">Total: {orders.length} pedidos</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-slate-500 font-medium">Total: {orders.length} pedidos</span>
+                    {orders.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowClearAllModal(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-md transition-colors cursor-pointer"
+                        title="Apagar todos os pedidos e alunos exemplos para começar do zero"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Apagar Alunos Exemplos</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-                      <tr>
-                        <th className="p-4">Pedido</th>
-                        <th className="p-4">Aluno</th>
-                        <th className="p-4">Curso</th>
-                        <th className="p-4">Valor</th>
-                        <th className="p-4">Comprovante</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4 text-right">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-slate-700">
-                      {orders.map((ord) => {
-                        return (
-                          <tr key={ord.id} className="hover:bg-slate-50">
-                            <td className="p-4 font-mono font-bold text-slate-900">{ord.id}</td>
-                            <td className="p-4">
-                              <p className="font-semibold text-slate-900">{ord.studentName}</p>
-                              <p className="text-[11px] text-slate-500">{ord.studentEmail}</p>
-                            </td>
-                            <td className="p-4 font-medium max-w-[160px] truncate">{ord.courseTitle}</td>
-                            <td className="p-4 font-semibold tabular-nums">
-                              R$ {ord.amount.toFixed(2).replace('.', ',')}
-                              {ord.couponCode && (
-                                <span className="block text-[10px] text-emerald-600 font-mono">
-                                  {ord.couponCode}
-                                </span>
-                              )}
-                            </td>
-                            <td className="p-4">
-                              {ord.receiptFileName ? (
-                                <span className="text-[11px] text-slate-700 font-medium underline">
-                                  {ord.receiptFileName}
-                                </span>
-                              ) : (
-                                <span className="text-slate-400">—</span>
-                              )}
-                            </td>
-                            <td className="p-4">
-                              {ord.status === 'PENDING' && (
-                                <span className="px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded text-[10px]">
-                                  Pendente
-                                </span>
-                              )}
-                              {ord.status === 'APPROVED' && (
-                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded text-[10px]">
-                                  Aprovado
-                                </span>
-                              )}
-                              {ord.status === 'REJECTED' && (
-                                <span className="px-2 py-0.5 bg-rose-100 text-rose-800 font-bold rounded text-[10px]">
-                                  Rejeitado
-                                </span>
-                              )}
-                              {ord.status === 'REFUNDED' && (
-                                <span className="px-2 py-0.5 bg-slate-200 text-slate-800 font-bold rounded text-[10px]">
-                                  Estornado
-                                </span>
-                              )}
-                            </td>
-                            <td className="p-4 text-right space-x-1 whitespace-nowrap">
-                              {ord.status === 'PENDING' && (
-                                <>
+                {orders.length === 0 ? (
+                  <div className="p-12 text-center space-y-3">
+                    <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto" />
+                    <h3 className="font-serif text-base font-bold text-slate-800">
+                      Nenhum pedido cadastrado no momento
+                    </h3>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto">
+                      Sua plataforma está 100% limpa e pronta para receber pedidos reais dos seus alunos via PIX!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                        <tr>
+                          <th className="p-4">Pedido</th>
+                          <th className="p-4">Aluno</th>
+                          <th className="p-4">Curso</th>
+                          <th className="p-4">Valor</th>
+                          <th className="p-4">Comprovante</th>
+                          <th className="p-4">Status</th>
+                          <th className="p-4 text-right">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {orders.map((ord) => {
+                          return (
+                            <tr key={ord.id} className="hover:bg-slate-50">
+                              <td className="p-4 font-mono font-bold text-slate-900">{ord.id}</td>
+                              <td className="p-4">
+                                <p className="font-semibold text-slate-900">{ord.studentName}</p>
+                                <p className="text-[11px] text-slate-500">{ord.studentEmail}</p>
+                              </td>
+                              <td className="p-4 font-medium max-w-[160px] truncate">{ord.courseTitle}</td>
+                              <td className="p-4 font-semibold tabular-nums">
+                                R$ {ord.amount.toFixed(2).replace('.', ',')}
+                                {ord.couponCode && (
+                                  <span className="block text-[10px] text-emerald-600 font-mono">
+                                    {ord.couponCode}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-4">
+                                {ord.receiptFileName ? (
+                                  <span className="text-[11px] text-slate-700 font-medium underline">
+                                    {ord.receiptFileName}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400">—</span>
+                                )}
+                              </td>
+                              <td className="p-4">
+                                {ord.status === 'PENDING' && (
+                                  <span className="px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded text-[10px]">
+                                    Pendente
+                                  </span>
+                                )}
+                                {ord.status === 'APPROVED' && (
+                                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded text-[10px]">
+                                    Aprovado
+                                  </span>
+                                )}
+                                {ord.status === 'REJECTED' && (
+                                  <span className="px-2 py-0.5 bg-rose-100 text-rose-800 font-bold rounded text-[10px]">
+                                    Rejeitado
+                                  </span>
+                                )}
+                                {ord.status === 'REFUNDED' && (
+                                  <span className="px-2 py-0.5 bg-slate-200 text-slate-800 font-bold rounded text-[10px]">
+                                    Estornado
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-4 text-right space-x-1.5 whitespace-nowrap">
+                                {ord.status === 'PENDING' && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => approveOrder(ord.id)}
+                                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold cursor-pointer"
+                                    >
+                                      Aprovar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setRejectingOrderId(ord.id);
+                                        setRejectReason('Comprovante divergente.');
+                                      }}
+                                      className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-[11px] font-bold cursor-pointer"
+                                    >
+                                      Rejeitar
+                                    </button>
+                                  </>
+                                )}
+                                {ord.status === 'APPROVED' && (
                                   <button
                                     type="button"
-                                    onClick={() => approveOrder(ord.id)}
-                                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold cursor-pointer"
+                                    onClick={() => refundOrder(ord.id)}
+                                    className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded text-[11px] font-semibold cursor-pointer"
                                   >
-                                    Aprovar
+                                    Estornar
                                   </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setRejectingOrderId(ord.id);
-                                      setRejectReason('Comprovante divergente.');
-                                    }}
-                                    className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-[11px] font-bold cursor-pointer"
-                                  >
-                                    Rejeitar
-                                  </button>
-                                </>
-                              )}
-                              {ord.status === 'APPROVED' && (
+                                )}
                                 <button
                                   type="button"
-                                  onClick={() => refundOrder(ord.id)}
-                                  className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded text-[11px] font-semibold cursor-pointer"
+                                  onClick={() => setDeletingOrderId(ord.id)}
+                                  className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded text-[11px] font-semibold cursor-pointer inline-flex items-center gap-1"
+                                  title="Excluir este pedido"
                                 >
-                                  Estornar
+                                  <Trash2 className="w-3 h-3" />
+                                  <span>Excluir</span>
                                 </button>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 
@@ -713,7 +763,7 @@ export const AdminDashboardPage: React.FC = () => {
                               </span>
                             )}
                           </td>
-                          <td className="p-4 text-right space-x-2">
+                          <td className="p-4 text-right space-x-1.5 whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() => setSelectedCertForModal(cert)}
@@ -728,11 +778,24 @@ export const AdminDashboardPage: React.FC = () => {
                                   setRevokingCertId(cert.id);
                                   setRevocationReason('Irregularidade cadastral');
                                 }}
-                                className="px-2.5 py-1 bg-rose-600 text-white rounded text-[11px] font-semibold hover:bg-rose-700 cursor-pointer"
+                                className="px-2.5 py-1 bg-amber-600 text-white rounded text-[11px] font-semibold hover:bg-amber-700 cursor-pointer"
                               >
                                 Revogar
                               </button>
                             )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(`Excluir permanentemente o certificado ${cert.id}?`)) {
+                                  deleteCertificate(cert.id);
+                                }
+                              }}
+                              className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded text-[11px] font-semibold cursor-pointer inline-flex items-center gap-1"
+                              title="Excluir certificado"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Excluir</span>
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -1163,6 +1226,85 @@ export const AdminDashboardPage: React.FC = () => {
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded"
               >
                 Confirmar Rejeição
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Single Order Dialog */}
+      {deletingOrderId && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center text-rose-600 mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-1">
+              <h3 className="font-serif text-lg font-bold text-slate-900">
+                Excluir Pedido {deletingOrderId}?
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Tem certeza que deseja excluir permanentemente este pedido e remover os acessos associados do aluno?
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingOrderId(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteOrder(deletingOrderId);
+                  setDeletingOrderId(null);
+                }}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded cursor-pointer"
+              >
+                Sim, Excluir Pedido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear All Demo Orders Dialog */}
+      {showClearAllModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center text-rose-600 mx-auto">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-1.5">
+              <h3 className="font-serif text-lg font-bold text-slate-900">
+                Apagar Todos os Alunos Exemplos?
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Esta ação vai remover <strong>todos os pedidos e matrículas de demonstração</strong> (como Juliana Mendes e Rodrigo Albuquerque) e certificados de teste.
+              </p>
+              <p className="text-xs text-emerald-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 font-medium">
+                ✓ Sua plataforma ficará 100% limpa (0 pedidos e 0 matrículas) para você começar a receber e gerenciar apenas suas vendas reais via PIX!
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowClearAllModal(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  clearDemoData();
+                  setShowClearAllModal(false);
+                }}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded cursor-pointer"
+              >
+                Sim, Apagar Tudo
               </button>
             </div>
           </div>
