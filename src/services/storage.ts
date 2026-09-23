@@ -200,7 +200,28 @@ export const storage = {
 
   getCourses(): Course[] {
     const data = localStorage.getItem('adp_courses');
-    return data ? JSON.parse(data) : INITIAL_COURSES;
+    if (!data) return INITIAL_COURSES;
+    try {
+      const parsed: Course[] = JSON.parse(data);
+      // Migrate old /src/assets/images/ paths to /images/ and sync default cover images
+      return parsed.map((course) => {
+        const initialMatch = INITIAL_COURSES.find((ic) => ic.id === course.id);
+        let coverImage = course.coverImage;
+        if (coverImage && coverImage.startsWith('/src/assets/images/')) {
+          coverImage = coverImage.replace('/src/assets/images/', '/images/');
+        }
+        // If the cover was still pointing to the old duplicated marketing or canva cover, update to the dedicated one
+        if (initialMatch && coverImage && initialMatch.coverImage !== coverImage) {
+          coverImage = initialMatch.coverImage;
+        }
+        return {
+          ...course,
+          coverImage: coverImage || (initialMatch ? initialMatch.coverImage : '/images/course_marketing_cover_1790119321192.jpg'),
+        };
+      });
+    } catch {
+      return INITIAL_COURSES;
+    }
   },
   setCourses(courses: Course[]): void {
     localStorage.setItem('adp_courses', JSON.stringify(courses));

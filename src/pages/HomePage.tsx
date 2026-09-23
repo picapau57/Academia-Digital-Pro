@@ -18,8 +18,8 @@ export const HomePage: React.FC = () => {
   const { courses, settings, navigateTo, t } = useApp();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-  const heroImage = '/src/assets/images/hero_education_modern_1790119308658.jpg';
-  const bundleImage = '/src/assets/images/course_bundle_showcase_1790119358470.jpg';
+  const heroImage = '/images/hero_education_modern_1790119308658.jpg';
+  const bundleImage = '/images/course_bundle_showcase_1790119358470.jpg';
 
   const faqItems = [
     {

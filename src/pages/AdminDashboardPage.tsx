@@ -570,7 +570,7 @@ export const AdminDashboardPage: React.FC = () => {
                         durationHours: 8,
                         price: 39.90,
                         originalPrice: 97.00,
-                        coverImage: '/src/assets/images/course_marketing_hero_1790119318991.jpg',
+                        coverImage: '/images/course_marketing_cover_1790119321192.jpg',
                         published: true,
                         certificateEnabled: true,
                         learningObjectives: ['Aprender fundamentos práticos', 'Desenvolver portfólio real'],
