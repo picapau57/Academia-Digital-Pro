@@ -4,6 +4,7 @@ import { Header } from './components/common/Header';
 import { Footer } from './components/common/Footer';
 import { WhatsAppButton } from './components/common/WhatsAppButton';
 import { ToastContainer } from './components/common/ToastContainer';
+import { GoogleAdSenseTracker } from './components/common/GoogleAdSenseTracker';
 
 // Pages
 import { HomePage } from './pages/HomePage';
@@ -113,6 +114,7 @@ const RouterView: React.FC = () => {
 export const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans selection:bg-amber-400 selection:text-slate-900 transition-colors duration-150">
+      <GoogleAdSenseTracker />
       <Header />
       <main className="flex-1">
         <RouterView />
